@@ -9,4 +9,3 @@ To run Model, you'll need Python 3.x and the following python packages:
 
 
 
-For more information on what each hyperparameter means, see src/applications/run.py
