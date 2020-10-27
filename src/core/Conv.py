@@ -120,12 +120,12 @@ class ConvAE:
         def sampling(args):
             z_mean, z_log_var = args
             epsilon = K.random_normal(shape=(K.shape(z_mean)[0], latent_dim))
-            return z_mean + K.exp(z_log_var / 2) * epsilon
+            return [z_mean + K.exp(z_log_var / 2) * epsilon,K.exp(z_log_var / 2) * epsilon]
 
         z_mean_1 = z_mean + pertation
 
-        z = Lambda(sampling, output_shape=(latent_dim,))([z_mean, z_log_var])
-        z_1 = Lambda(sampling, output_shape=(latent_dim,))([z_mean_1, z_log_var])
+        z,resample = Lambda(sampling)([z_mean, z_log_var])
+        z_1 = z_mean_1+resample
         self.encoder = Model(x, z_mean)
 
         x_recon = self.decoder(z)
@@ -200,7 +200,7 @@ class ConvAE:
         Dis = tf.diag_part(tf.matmul(y,y_1,transpose_b=True))
 
         xent1_loss = 1 * K.mean((x_recon - x_recon1) ** 2, 0)
-        self.adv_loss = lamb * K.sum(xent1_loss) + 0.05 * K.sum(Dis) + 1 * K.sum(selfloss)
+        self.adv_loss = lamb * K.sum(xent1_loss) + 0.04 * K.sum(Dis) + 1 * K.sum(selfloss)
 
 
 #defense
@@ -242,7 +242,7 @@ class ConvAE:
 
 
 
-        self.D = K.mean(K.sum(tf.abs(z_mean - z_mean_1), 0)/K.sum(tf.abs(z_mean), 0))
+        self.D = K.mean(K.sum(tf.abs(z_mean - z_mean_1), 0))
 
 
 
@@ -251,7 +251,27 @@ class ConvAE:
         self.train_step2 = tf.train.AdamOptimizer().minimize(self.adv_loss, var_list=self.Advsior.weights)
         K.get_session().run(tf.variables_initializer(self.vae.trainable_weights))
 
-    def train_vae(self, x_train_unlabeled,x_dy,x_dy1,batch_size):
+    def train_Advsior(self, x_train_unlabeled,x_dy,x_dy1,batch_size):
+        # create handler for early stopping and learning rate scheduling
+
+        losses,M = self.train_vae_step(
+                return_var=[self.adv_loss],
+                updates=[self.train_step2]+self.Advsior.updates,
+                x_unlabeled=x_train_unlabeled,
+                inputs=self.x,
+                x_dy=x_dy,
+                x_dy1=x_dy1,
+                batch_sizes=batch_size,
+                batches_per_epoch=50)
+
+
+
+
+
+        return losses,M
+
+
+    def train_defense(self, x_train_unlabeled,x_dy,x_dy1,batch_size):
         # create handler for early stopping and learning rate scheduling
 
         losses,M = self.train_vae_step(
@@ -269,6 +289,7 @@ class ConvAE:
 
 
         return losses,M
+
 
     def train_vae_step(self,return_var, updates, x_unlabeled, inputs,x_dy,x_dy1,
                    batch_sizes,
