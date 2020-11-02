@@ -73,7 +73,7 @@ def run_net(data, params):
         accuracy = print_accuracy(y_sp, y_val, params['n_clusters'])
         nmi1[i] = accuracy
         accuracy = print_accuracy(y_sp_1, y_val, params['n_clusters'])
-        losses_vae[i],M = ConvAE.train_defense(x_val,noise,noise1,params['batch_size'])
+        losses_vae[i] = ConvAE.train_defense(x_val,noise,noise1,params['batch_size'])
         print("1Z Epoch: {}, loss={:2f},D = {}".format(i, losses_vae[i],M))
         acc[i] = accuracy
 
@@ -81,7 +81,6 @@ def run_net(data, params):
         print('NMI: ' + str(np.round(nmi(y_sp, y_val), 4)))
 
         print('NMI: ' + str(np.round(nmi(y_sp_1, y_val), 4)))
-        losse[i]=M
 
         if i>1:
             if np.abs(losses_vae[i]-losses_vae[i-1])<0.0001:
