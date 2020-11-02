@@ -254,7 +254,7 @@ class ConvAE:
     def train_Advsior(self, x_train_unlabeled,x_dy,x_dy1,batch_size):
         # create handler for early stopping and learning rate scheduling
 
-        losses,M = self.train_vae_step(
+        losses = self.train_vae_step(
                 return_var=[self.adv_loss],
                 updates=[self.train_step2]+self.Advsior.updates,
                 x_unlabeled=x_train_unlabeled,
@@ -268,13 +268,13 @@ class ConvAE:
 
 
 
-        return losses,M
+        return losses
 
 
     def train_defense(self, x_train_unlabeled,x_dy,x_dy1,batch_size):
         # create handler for early stopping and learning rate scheduling
 
-        losses,M = self.train_vae_step(
+        losses = self.train_vae_step(
                 return_var=[self.loss_defense],
                 updates=[self.train_step1]+self.vae.updates+self.Discriminator.updates,
                 x_unlabeled=x_train_unlabeled,
@@ -288,7 +288,7 @@ class ConvAE:
 
 
 
-        return losses,M
+        return losses
 
 
     def train_vae_step(self,return_var, updates, x_unlabeled, inputs,x_dy,x_dy1,
@@ -299,7 +299,6 @@ class ConvAE:
 
         # scale = get_scale(x_dy, 1000, 2)
         # train batches_per_epoch batches
-        M = 0
         for batch_num in range(0, batches_per_epoch):
             feed_dict = {K.learning_phase(): 1}
 
@@ -314,16 +313,16 @@ class ConvAE:
                         # feed_dict[P]=P[batch_ids]
 
             all_vars = return_var + updates
-            all_vars_R,D =  K.get_session().run((all_vars,self.D), feed_dict=feed_dict)
+            all_vars_R =  K.get_session().run((all_vars), feed_dict=feed_dict)
 
             return_vars_ += np.asarray(all_vars_R[:len(return_var)])
-            M  = M+D
+
 
             # M = K.get_session().run((self.centers_d),feed_dict=feed_dict)
             # print('confusion matrix{}: '.format(''))
             # print(np.round(centers_d, 2))
             # print(np.round(D, 4))
-        return return_vars_,M
+        return return_vars_
 
 
 
